@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PIXEL PERFECT — Pixel Photobooth</title>
+<meta name="description" content="A free pixel-art photobooth. Pick a layout, pick a filter, strike a pose, download your strip.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--night:#1a1033;--panel:#2b1a52;--curtain:#6b2fa0;--curtain2:#58267f;--flash:#ffd23f;--pink:#ff4d8d;--mint:#5eead4;--text:#f6f0ff;--muted:#b9a8e0;--px:4px}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--night);color:var(--text);font-family:'VT323',monospace;font-size:22px;line-height:1.25;min-height:100vh}
+.curtain{position:fixed;inset:0;z-index:-1;background:repeating-linear-gradient(90deg,var(--curtain) 0 28px,var(--curtain2) 28px 56px);opacity:.35}
+header{text-align:center;padding:28px 16px 12px}
+h1{font-family:'Press Start 2P',monospace;font-size:clamp(20px,6vw,44px);color:var(--flash);text-shadow:4px 4px 0 var(--pink),8px 8px 0 #000;letter-spacing:2px}
+header p{color:var(--muted);margin-top:18px}
+main{max-width:1080px;margin:0 auto;padding:12px 14px 40px;display:grid;gap:18px}
+@media(min-width:900px){main{grid-template-columns:1.25fr 1fr;align-items:start}.wide{grid-column:1/-1}}
+.box{background:var(--panel);box-shadow:0 0 0 var(--px) #000,var(--px) calc(var(--px)*2) 0 var(--px) #000;padding:14px;border:var(--px) solid var(--text);border-color:var(--text) #6e5aa8 #6e5aa8 var(--text)}
+h2{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--mint);margin-bottom:12px;font-weight:400}
+.view{position:relative;background:#000;aspect-ratio:4/3;width:100%;overflow:hidden;border:var(--px) solid #000}
+#view{width:100%;height:100%;image-rendering:pixelated;display:block}
+#msg{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:20px;background:#000c;font-size:24px}
+#count{position:absolute;inset:0;display:none;place-items:center;font-family:'Press Start 2P';font-size:clamp(60px,18vw,140px);color:var(--flash);text-shadow:6px 6px 0 var(--pink);pointer-events:none}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#flash.go{animation:fl .45s steps(4) 1}
+@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.dots{display:flex;gap:8px;justify-content:center;margin:12px 0 4px;min-height:18px}
+.dots i{width:16px;height:16px;background:#4a3a7a;display:block}.dots i.on{background:var(--flash)}.dots i.now{background:var(--pink)}
+.btn{font-family:'Press Start 2P',monospace;font-size:11px;color:#000;background:var(--flash);border:0;padding:14px 14px;cursor:pointer;box-shadow:inset -4px -4px 0 #c79a00,0 0 0 3px #000;touch-action:manipulation}
+.btn:active{transform:translate(2px,2px)}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+.btn.pink{background:var(--pink);color:#fff;box-shadow:inset -4px -4px 0 #b32b60,0 0 0 3px #000}
+.btn.ghost{background:#4a3a7a;color:var(--text);box-shadow:inset -4px -4px 0 #35275e,0 0 0 3px #000}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.shutter{display:block;width:100%;margin-top:10px;font-size:14px;padding:18px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:'VT323',monospace;font-size:21px;color:var(--text);background:#3d2a70;border:0;padding:6px 10px;cursor:pointer;box-shadow:0 0 0 3px #000}
+.chip[aria-pressed=true]{background:var(--mint);color:#000}
+.chip canvas{display:block;margin:0 auto 4px;image-rendering:pixelated;width:44px;height:33px}
+.stack{display:grid;gap:18px}
+label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0}
+input[type=range]{width:55%;accent-color:var(--pink)}
+select,input[type=text]{font:inherit;background:#150c2b;color:var(--text);border:3px solid #000;padding:4px 8px;max-width:58%}
+input[type=color]{width:44px;height:30px;border:3px solid #000;padding:0;background:none}
+.swatch{width:30px;height:30px;border:3px solid #000;cursor:pointer;padding:0}
+.swatch[aria-pressed=true]{outline:3px solid var(--flash)}
+#result{display:none;gap:14px}
+#out{max-width:100%;max-height:78vh;image-rendering:pixelated;display:block;margin:0 auto;box-shadow:0 0 0 4px #000,10px 10px 0 4px #0008}
+.res-wrap{overflow:auto;padding:10px 6px 16px;text-align:center}
+.hint{color:var(--muted);font-size:19px;margin-top:8px}
+footer{text-align:center;color:var(--muted);padding:0 14px 30px}
+@media(prefers-reduced-motion:reduce){#flash.go{animation:none;opacity:0}}
+</style>
+</head>
+<body>
+<div class="curtain" aria-hidden="true"></div>
+<header>
+  <h1>PIXEL PERFECT</h1>
+  <p>Pick a layout and a filter, strike a pose, take your strip home.</p>
+</header>
+
+<main>
+  <section class="box" aria-label="Booth">
+    <h2>BOOTH</h2>
+    <div class="view">
+      <canvas id="view"></canvas>
+      <div id="msg"></div>
+      <div id="count" aria-live="assertive"></div>
+      <div id="flash"></div>
+    </div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <button class="btn pink shutter" id="shoot">START PHOTOS</button>
+    <p class="hint">Tip: press Space to start. Your photos stay on your device.</p>
+  </section>
+
+  <div class="stack">
+    <section class="box" aria-label="Layouts">
+      <h2>LAYOUT</h2>
+      <div class="row" id="layouts"></div>
+    </section>
+    <section class="box" aria-label="Filters">
+      <h2>FILTER</h2>
+      <div class="row" id="filters"></div>
+      <label>Dither <input type="checkbox" id="dither"></label>
+    </section>
+    <section class="box" aria-label="Settings">
+      <h2>SETTINGS</h2>
+      <label>Countdown
+        <select id="timer"><option value="3">3 sec</option><option value="5">5 sec</option><option value="10">10 sec</option><option value="0">None</option></select>
+      </label>
+      <label>Pixel size <input type="range" id="res" min="0" max="3" step="1" value="2" aria-label="Pixel size"></label>
+      <label>Mirror <input type="checkbox" id="mirror" checked></label>
+      <label>Sound <input type="checkbox" id="sound" checked></label>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost" id="flip">FLIP CAM</button>
+        <button class="btn ghost" id="upBtn">UPLOAD</button>
+        <input type="file" id="up" accept="image/*" multiple hidden>
+      </div>
+    </section>
+  </div>
+
+  <section class="box wide" id="result" aria-label="Your photos">
+    <h2>YOUR STRIP</h2>
+    <div class="res-wrap"><canvas id="out" aria-label="Photo strip preview"></canvas></div>
+    <label>Frame color
+      <span class="row" id="swatches"></span>
+    </label>
+    <label>Custom <input type="color" id="custom" value="#ffffff"></label>
+    <label>Caption <input type="text" id="cap" maxlength="22" placeholder="PIXEL PERFECT"></label>
+    <label>Date stamp <input type="checkbox" id="date" checked></label>
+    <label>Stickers
+      <select id="stk"><option value="">None</option><option value="★">Stars</option><option value="♥">Hearts</option><option value="☺">Smiles</option><option value="♪">Notes</option><option value="✦">Sparkles</option></select>
+    </label>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="dl">DOWNLOAD PNG</button>
+      <button class="btn ghost" id="share">SHARE</button>
+      <button class="btn pink" id="again">RETAKE</button>
+    </div>
+  </section>
+</main>
+<footer>PIXEL PERFECT · made with &lt;3 and very few pixels</footer>
+
+<script>
+const $=s=>document.querySelector(s);
+const view=$('#view'),vctx=view.getContext('2d',{willReadFrequently:true});
+const vid=document.createElement('video');vid.playsInline=true;vid.muted=true;
+const RES=[96,128,160,224];            // pixel widths (smaller = chunkier)
+let W=160,H=120,facing='user',stream=null,ready=false,busy=false,upImg=null;
+let layout,filter,frames=[],frameColor='#ffffff';
+
+/* ---------- Layouts ---------- */
+const LAYOUTS=[
+ {id:'strip4',n:'Strip x4',shots:4,c:1,r:4},
+ {id:'strip3',n:'Strip x3',shots:3,c:1,r:3},
+ {id:'grid',n:'Grid 2x2',shots:4,c:2,r:2},
+ {id:'duo',n:'Duo',shots:2,c:2,r:1},
+ {id:'polaroid',n:'Polaroid',shots:1,c:1,r:1,tall:1},
+ {id:'single',n:'Single',shots:1,c:1,r:1}
+];
+
+/* ---------- Filters (per-pixel) ---------- */
+const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+const pal=p=>(d,w,h,dt)=>{for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;let l=(.299*d[i]+.587*d[i+1]+.114*d[i+2])/255;
+ if(dt)l+=(BAY[(y&3)*4+(x&3)]/16-.5)/p.length;const c=p[Math.max(0,Math.min(p.length-1,Math.floor(l*p.length)))];d[i]=c[0];d[i+1]=c[1];d[i+2]=c[2]}};
+const map=f=>(d,w,h,dt)=>{for(let i=0;i<d.length;i+=4){const o=f(d[i],d[i+1],d[i+2]);d[i]=o[0];d[i+1]=o[1];d[i+2]=o[2]}};
+const cl=v=>v<0?0:v>255?255:v;
+const FILTERS=[
+ {id:'normal',n:'Normal',fn:(d,w,h,dt)=>{if(dt){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4,t=(BAY[(y&3)*4+(x&3)]/16-.5)*48;for(let k=0;k<3;k++)d[i+k]=Math.round(cl(d[i+k]+t)/64)*64}}}},
+ {id:'gameboy',n:'Game Boy',fn:pal([[15,56,15],[48,98,48],[139,172,15],[155,188,15]])},
+ {id:'mono',n:'Mono',fn:pal([[0,0,0],[85,85,85],[170,170,170],[255,255,255]])},
+ {id:'sepia',n:'Sepia',fn:map((r,g,b)=>[cl(r*.393+g*.769+b*.189),cl(r*.349+g*.686+b*.168),cl(r*.272+g*.534+b*.131)])},
+ {id:'sunset',n:'Sunset',fn:pal([[30,10,60],[140,30,110],[255,90,80],[255,200,80],[255,245,200]])},
+ {id:'ice',n:'Ice',fn:pal([[5,10,40],[20,60,140],[60,160,220],[170,240,250],[255,255,255]])},
+ {id:'neon',n:'Neon',fn:map((r,g,b)=>{const l=(r+g+b)/3;return[cl((r-l)*2.2+l*1.1+30),cl((g-l)*2.2+l*.9),cl((b-l)*2.2+l*1.3+40)]})},
+ {id:'cga',n:'Arcade',fn:map((r,g,b)=>{const P=[[0,0,0],[85,255,255],[255,85,255],[255,255,255]];let best=P[0],bd=1e9;for(const p of P){const e=(r-p[0])**2+(g-p[1])**2+(b-p[2])**2;if(e<bd){bd=e;best=p}}return best})},
+ {id:'vhs',n:'VHS',fn:(d,w,h)=>{for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4,s=y%2?.78:1,j=((y*w+Math.min(w-1,x+2))*4);d[i]=cl(d[j]*s*1.1);d[i+1]=cl(d[i+1]*s);d[i+2]=cl(d[i+2]*s*1.15+10)}}},
+ {id:'poster',n:'Poster',fn:map((r,g,b)=>{const q=v=>Math.round(cl(v*1.2)/85)*85;return[q(r),q(g),q(b)]})},
+ {id:'invert',n:'Invert',fn:map((r,g,b)=>[255-r,255-g,255-b])},
+ {id:'warm',n:'Warm',fn:map((r,g,b)=>[cl(r*1.15+10),cl(g*1.02),cl(b*.8)])}
+];
+
+/* ---------- Capture pipeline ---------- */
+const tmp=document.createElement('canvas'),tctx=tmp.getContext('2d',{willReadFrequently:true});
+function source(){return upImg||(ready?vid:null)}
+function paint(ctx,cv){
+  const s=source();
+  ctx.imageSmoothingEnabled=true;
+  if(!s){ctx.fillStyle='#120a26';ctx.fillRect(0,0,W,H);return}
+  const sw0=s.videoWidth||s.naturalWidth,sh0=s.videoHeight||s.naturalHeight;if(!sw0)return;
+  let sw=sw0,sh=sh0,sx=0,sy=0;const ar=W/H;
+  if(sw0/sh0>ar){sw=sh0*ar;sx=(sw0-sw)/2}else{sh=sw0/ar;sy=(sh0-sh)/2}
+  ctx.save();
+  if($('#mirror').checked&&!upImg){ctx.translate(W,0);ctx.scale(-1,1)}
+  ctx.drawImage(s,sx,sy,sw,sh,0,0,W,H);ctx.restore();
+  const id=ctx.getImageData(0,0,W,H);filter.fn(id.data,W,H,$('#dither').checked);ctx.putImageData(id,0,0);
+}
+function loop(){
+  if(view.width!==W||view.height!==H){view.width=W;view.height=H}
+  paint(vctx,view);requestAnimationFrame(loop)
+}
+function snap(){const c=document.createElement('canvas');c.width=W;c.height=H;paint(c.getContext('2d',{willReadFrequently:true}),c);return c}
+
+async function startCam(){
+  stream&&stream.getTracks().forEach(t=>t.stop());ready=false;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg('Camera needs HTTPS and a modern browser. You can still use UPLOAD.');return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1280},height:{ideal:960}},audio:false});
+    vid.srcObject=stream;await vid.play();ready=true;upImg=null;msg('');
+  }catch(e){msg('Camera blocked. Allow camera access in your browser, then reload. Or tap UPLOAD.')}
+}
+function msg(t){const m=$('#msg');m.textContent=t;m.style.display=t?'grid':'none'}
+
+/* ---------- Sound & session ---------- */
+let ac;function beep(f=660,d=.12){if(!$('#sound').checked)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=f;g.gain.value=.06;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function dots(n,now){$('#dots').innerHTML=Array.from({length:layout.shots},(_,i)=>`<i class="${i<n?'on':i===now?'now':''}"></i>`).join('')}
+
+async function run(){
+  if(busy)return;if(!source()){msg('No camera yet. Allow access or tap UPLOAD.');return}
+  busy=true;$('#shoot').disabled=true;frames=[];$('#result').style.display='none';
+  const t=+$('#timer').value;
+  for(let i=0;i<layout.shots;i++){
+    dots(i,i);
+    for(let s=t;s>0;s--){const c=$('#count');c.textContent=s;c.style.display='grid';beep(520);await sleep(1000)}
+    $('#count').style.display='none';
+    const f=$('#flash');f.classList.remove('go');void f.offsetWidth;f.classList.add('go');beep(980,.2);
+    frames.push(snap());dots(i+1,i+1);await sleep(t?700:900);
+  }
+  busy=false;$('#shoot').disabled=false;$('#shoot').textContent='TAKE MORE';showResult();
+}
+async function fromFiles(files){
+  const list=[...files].slice(0,layout.shots);if(!list.length)return;frames=[];
+  for(const f of list){
+    const img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=URL.createObjectURL(f)});
+    upImg=img;frames.push(snap());
+  }
+  upImg=null;showResult();
+}
+
+/* ---------- Compose result ---------- */
+function showResult(){$('#result').style.display='grid';render();$('#result').scrollIntoView({behavior:'smooth',block:'start'})}
+function ink(hex){const n=parseInt(hex.slice(1),16),l=.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255);return l>140?'#1a1033':'#ffffff'}
+function render(){
+  if(!frames.length)return;
+  const S=Math.max(2,Math.round(640/frames[0].width)),cw=frames[0].width*S,ch=frames[0].height*S,pad=32,gap=20,foot=layout.tall?170:110;
+  const o=$('#out'),x=o.getContext('2d');
+  o.width=pad*2+layout.c*cw+(layout.c-1)*gap;o.height=pad*2+layout.r*ch+(layout.r-1)*gap+foot;
+  x.imageSmoothingEnabled=false;x.fillStyle=frameColor;x.fillRect(0,0,o.width,o.height);
+  for(let i=0;i<layout.shots;i++){
+    const cx=pad+(i%layout.c)*(cw+gap),cy=pad+Math.floor(i/layout.c)*(ch+gap);
+    x.fillStyle='#000';x.fillRect(cx-6,cy-6,cw+12,ch+12);x.drawImage(frames[i%frames.length],cx,cy,cw,ch);
+  }
+  const c=ink(frameColor),by=o.height-foot;x.fillStyle=c;x.textAlign='center';x.textBaseline='middle';
+  x.font="22px 'Press Start 2P',monospace";
+  const cap=$('#cap').value.trim().toUpperCase()||'PIXEL PERFECT';x.fillText(cap,o.width/2,by+foot*.4);
+  if($('#date').checked){x.font="18px 'Press Start 2P',monospace";x.globalAlpha=.7;x.fillText(new Date().toLocaleDateString(undefined,{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'.'),o.width/2,by+foot*.4+38);x.globalAlpha=1}
+  const st=$('#stk').value;
+  if(st){x.font="34px 'Press Start 2P',monospace";const pos=[[.1,.04],[.9,.05],[.08,.5],[.92,.46],[.12,.93],[.88,.92],[.5,.02]];
+   pos.forEach(([a,b],k)=>{x.fillStyle=['#ff4d8d','#ffd23f','#5eead4','#6b2fa0'][k%4];x.fillText(st,o.width*a,o.height*b+(b<.1?16:0))})}
+}
+
+/* ---------- UI wiring ---------- */
+function chips(host,items,get,pick,draw){
+  const el=$(host);el.innerHTML='';
+  items.forEach(it=>{const b=document.createElement('button');b.className='chip';b.type='button';b.append(...(draw?draw(it):[]),it.n);
+    b.onclick=()=>{pick(it);[...el.children].forEach(c=>c.setAttribute('aria-pressed',c===b));};
+    b.setAttribute('aria-pressed',get()===it);el.append(b)});
+}
+function thumb(f){const c=document.createElement('canvas');c.width=44;c.height=33;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,44,33);g.addColorStop(0,'#ffcf6e');g.addColorStop(.5,'#d94f8a');g.addColorStop(1,'#2d3a9a');x.fillStyle=g;x.fillRect(0,0,44,33);
+  x.fillStyle='#f2c9a0';x.fillRect(15,8,14,16);x.fillStyle='#222';x.fillRect(18,13,3,3);x.fillRect(24,13,3,3);
+  const id=x.getImageData(0,0,44,33);f.fn(id.data,44,33,false);x.putImageData(id,0,0);return[c]}
+function layThumb(l){const c=document.createElement('canvas');c.width=44;c.height=33;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,44,33);x.fillStyle='#3d2a70';
+  const mw=l.c*14+(l.c-1)*3,mh=l.r*(l.c>1?10:6)+(l.r-1)*2,ox=(44-mw)/2,oy=(33-mh-(l.tall?6:0))/2;
+  for(let i=0;i<l.shots;i++)x.fillRect(ox+(i%l.c)*17,oy+Math.floor(i/l.c)*(l.c>1?12:8),14,l.c>1?10:6);return[c]}
+layout=LAYOUTS[0];filter=FILTERS[0];
+chips('#layouts',LAYOUTS,()=>layout,l=>{layout=l;dots(0,-1);if(frames.length)render()},layThumb);
+chips('#filters',FILTERS,()=>filter,f=>{filter=f;if(frames.length&&!busy){/* filters apply to new shots */}},thumb);
+['#FFFFFF','#FFD23F','#FF4D8D','#5EEAD4','#1A1033','#F4E3C3'].forEach(c=>{const b=document.createElement('button');b.className='swatch';b.style.background=c;b.setAttribute('aria-label','Frame '+c);b.setAttribute('aria-pressed',c==='#FFFFFF');
+  b.onclick=()=>{frameColor=c.toLowerCase();$('#custom').value=frameColor;[...$('#swatches').children].forEach(s=>s.setAttribute('aria-pressed',s===b));render()};$('#swatches').append(b)});
+$('#custom').oninput=e=>{frameColor=e.target.value;[...$('#swatches').children].forEach(s=>s.setAttribute('aria-pressed',false));render()};
+['#cap','#date','#stk'].forEach(s=>$(s).addEventListener('input',render));
+$('#res').oninput=e=>{W=RES[e.target.value];H=Math.round(W*.75)};
+$('#shoot').onclick=run;$('#again').onclick=()=>{$('#result').style.display='none';frames=[];dots(0,-1);scrollTo({top:0,behavior:'smooth'})};
+$('#flip').onclick=()=>{facing=facing==='user'?'environment':'user';$('#mirror').checked=facing==='user';startCam()};
+$('#upBtn').onclick=()=>$('#up').click();$('#up').onchange=e=>fromFiles(e.target.files);
+$('#dl').onclick=()=>$('#out').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pixel-perfect-'+Date.now()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)});
+$('#share').onclick=()=>$('#out').toBlob(async b=>{const f=new File([b],'pixel-perfect.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[f]}))try{await navigator.share({files:[f],title:'PIXEL PERFECT'})}catch(e){}else $('#dl').click()});
+addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)){e.preventDefault();run()}});
+dots(0,-1);W=RES[2];H=Math.round(W*.75);
+document.fonts.ready.then(()=>frames.length&&render());
+startCam();requestAnimationFrame(loop);
+</script>
+</body>
+  </html>
+  
